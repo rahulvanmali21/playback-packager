@@ -1,15 +1,14 @@
-const ffmpeg = require("fluent-ffmpeg");
-const { appendFileSync } = require("fs");
+
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
-const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
+import Ffmpeg from "fluent-ffmpeg";
 
-const preview_gif = (input, output_path) => {
-  const command = ffmpeg(inputPath);
+Ffmpeg.setFfmpegPath(ffmpegPath);
+
+export const preview_gif = (input:string, output_path:string) => {
+  const command = Ffmpeg(input);
   command
-    .output(gif_path)
+    .output(output_path)
     .format("gif")
     .size("480x?")
     .inputOptions(["-ss 10"])
@@ -17,7 +16,6 @@ const preview_gif = (input, output_path) => {
     .noAudio();
   command
     .on("start", (cmd) => {
-      appendFileSync("dash.txt", cmd);
     })
     .on("progress", (progress) => {
       console.log("progress", progress);
@@ -28,4 +26,4 @@ const preview_gif = (input, output_path) => {
     .run();
 };
 
-module.exports = preview_gif;
+
