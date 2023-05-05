@@ -1,12 +1,12 @@
-const ffmpeg = require("fluent-ffmpeg");
-const { appendFileSync } = require("fs");
-const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+import Ffmpeg from "fluent-ffmpeg";
+import { path as ffmpegPath } from "@ffmpeg-installer/ffmpeg";
+import { appendFileSync } from "fs";
 const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
+Ffmpeg.setFfmpegPath(ffmpegPath);
+Ffmpeg.setFfprobePath(ffprobePath);
 
- const gif_path = "outputs/preview.gif"
+const gif_path: string = "outputs/preview.gif";
 const resolutions = [
   {
     name: "640x360",
@@ -59,8 +59,8 @@ const resolutions = [
   },
 ];
 
-function dash(inputPath,outputPath){
-  const command = ffmpeg(inputPath).addOptions([
+export function dash(inputPath: string, outputPath: string) {
+  const command = Ffmpeg(inputPath).addOptions([
     "-y",
     "-preset",
     "veryfast",
@@ -85,7 +85,7 @@ function dash(inputPath,outputPath){
     "-ar",
     "44100",
   ]);
-  
+
   resolutions.forEach((resolution, index) => {
     command.addOption(`-map`, `v:0`);
     command.addOption(`-vf`, `scale=${resolution.width}:-2`);
@@ -93,7 +93,7 @@ function dash(inputPath,outputPath){
     command.addOption(`-maxrate:${index}`, resolution.maxrate);
     command.addOption(`-bufsize:${index}`, resolution.bufsize);
   });
-  
+
   command.addOption(`-map`, `0:a`);
   command.addOption(`-init_seg_name`, `init$RepresentationID$.$ext$`);
   command.addOption(
@@ -106,17 +106,6 @@ function dash(inputPath,outputPath){
   command.addOption(`-adaptation_sets`, `id=0,streams=v id=1,streams=a`);
   command.addOption(`-f`, `dash`);
   command.addOutput(outputPath);
-  
-  
-  command
-  .output(gif_path)
-  .format("gif")
-  .size('480x?')
-  .inputOptions([
-      '-ss 10',
-  ])
-  .outputOptions(['-t 5'])
-  .noAudio()
   command
     .on("start", (cmd) => {
       appendFileSync("dash.txt", cmd);
@@ -128,7 +117,6 @@ function dash(inputPath,outputPath){
       console.log("errorss", err);
     })
     .run();
-  
 }
 
-module.exports = dash;
+
