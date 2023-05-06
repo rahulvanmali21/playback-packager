@@ -1,10 +1,11 @@
-import * as Ffmpeg from "fluent-ffmpeg";
+const ffmpeg = require("fluent-ffmpeg");
 import { path as ffmpegPath } from "@ffmpeg-installer/ffmpeg";
 import { appendFileSync } from "fs";
+
 const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 
-Ffmpeg.setFfmpegPath(ffmpegPath);
-Ffmpeg.setFfprobePath(ffprobePath);
+ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 const resolutions = [
   {
@@ -23,7 +24,6 @@ const resolutions = [
     maxrate: "2.14M",
     bufsize: "3.5M",
   },
-
   {
     name: "720p",
     width: 1280,
@@ -58,8 +58,8 @@ const resolutions = [
   },
 ];
 
-export function dash(inputPath: string, outputPath: string) {
-  const command =  new Ffmpeg.FfmpegCommand(inputPath).addOptions([
+export function convertToHls(inputPath: string, outputPath: string) {
+  const command = ffmpeg(inputPath).addOptions([
     "-y",
     "-preset",
     "veryfast",
@@ -94,28 +94,23 @@ export function dash(inputPath: string, outputPath: string) {
   });
 
   command.addOption(`-map`, `0:a`);
-  command.addOption(`-init_seg_name`, `init$RepresentationID$.$ext$`);
-  command.addOption(
-    `-media_seg_name`,
-    `chunk$RepresentationID$-$Number%05d$.$ext$`
-  );
-  command.addOption(`-use_template`, `1`);
-  command.addOption(`-use_timeline`, `1`);
-  command.addOption(`-seg_duration`, `4`);
-  command.addOption(`-adaptation_sets`, `id=0,streams=v id=1,streams=a`);
-  command.addOption(`-f`, `dash`);
-  command.addOutput(outputPath);
+  command.addOption(`-f`, `hls`);
+  command.addOption(`-hls_time`, `4`);
+  command.addOption(`-hls_playlist_type`, `vod`);
+  command.addOption(`-hls_segment_filename`, `${outputPath}_%03d.ts`);
+  command.addOption(`-hls_segment_type`, `mpegts`);
+  command.addOption(`-hls_flags`, `delete_segments`);
+  command.addOutput(`${outputPath}.m3u8`);
+
   command
-    .on("start", (cmd) => {
-      appendFileSync("dash.txt", cmd);
+    .on("start", (cmd:string) => {
+      appendFileSync("hls.txt", cmd);
     })
-    .on("progress", (progress) => {
+    .on("progress", (progress:any) => {
       console.log("progress", progress);
     })
-    .on("error", function (err) {
+    .on("error", function (err:any) {
       console.log("errorss", err);
     })
     .run();
 }
-
-

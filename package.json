@@ -10,7 +10,7 @@
     "type": "git",
     "url": "git+https://github.com/your-username/your-repo.git"
   },
-  "author": "Stefan Schaermeli <schaermu@gmail.com>",
+  "author": "Rahul Vanmali <vanmalirahul1996@gmail.com>",
   "engines": {
     "node": ">=0.8.0"
   },
@@ -23,9 +23,8 @@
   },
   "devDependencies": {
     "@types/fluent-ffmpeg": "^2.1.21",
-    "ts-node": "^10.9.1",
     "@types/node": "^18.16.3",
+    "ts-node": "^10.9.1",
     "typescript": "^5.0.4"
-
   }
 }
