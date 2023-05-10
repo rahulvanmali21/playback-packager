@@ -7,11 +7,21 @@ const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
+
+// ffmpeg.setFfmpegPath(path);
+const VIDEO_IN = "inputs/input.mp4";
+const VIDEO_OUT = "outputs/main";
+const HLS_TIME = 4;
+const FPS = 25;
+const GOP_SIZE = 100;
+const PRESET_P = "veryfast";
+
+
 const resolutions = [
   {
-    name: "640x360",
+    name: "360p",
     width: 640,
-    height: -2,
+    height: 360,
     bitrate: "365k",
     maxrate: "390k",
     bufsize: "640k",
@@ -19,15 +29,16 @@ const resolutions = [
   {
     name: "480p",
     width: 854,
-    height: -2,
+    height: 480,
     bitrate: "750k",
     maxrate: "2.14M",
     bufsize: "3.5M",
   },
+
   {
     name: "720p",
     width: 1280,
-    height: -2,
+    height: 720,
     bitrate: "3M",
     maxrate: "3.21M",
     bufsize: "5.5M",
@@ -35,7 +46,7 @@ const resolutions = [
   {
     name: "720p",
     width: 1280,
-    height: -2,
+    height: 720,
     bitrate: "4.5M",
     maxrate: "4.8M",
     bufsize: "8M",
@@ -43,7 +54,7 @@ const resolutions = [
   {
     name: "1080p",
     width: 1920,
-    height: -2,
+    height: 1080,
     bitrate: "6M",
     maxrate: "6.42M",
     bufsize: "11M",
@@ -51,66 +62,66 @@ const resolutions = [
   {
     name: "1080p",
     width: 1920,
-    height: -2,
+    height: 1080,
     bitrate: "7.8M",
     maxrate: "8.3M",
     bufsize: "14M",
   },
 ];
 
-export function convertToHls(inputPath: string, outputPath: string) {
-  const command = ffmpeg(inputPath).addOptions([
-    "-y",
-    "-preset",
-    "veryfast",
-    "-keyint_min",
-    "100",
-    "-g",
-    "100",
-    "-sc_threshold",
-    "0",
-    "-r",
-    "24",
-    "-c:v",
-    "libx264",
-    "-pix_fmt",
-    "yuv420p",
-    "-c:a",
-    "aac",
-    "-b:a",
-    "128k",
-    "-ac",
-    "1",
-    "-ar",
-    "44100",
-  ]);
 
-  resolutions.forEach((resolution, index) => {
-    command.addOption(`-map`, `v:0`);
-    command.addOption(`-vf`, `scale=${resolution.width}:-2`);
+const command = ffmpeg()
+.addInput(VIDEO_IN);
+command.addOptions([
+  `-preset ${PRESET_P}`,
+  `-keyint_min ${GOP_SIZE}`,
+  `-g ${GOP_SIZE}`,
+  "-sc_threshold 0",
+  `-r ${FPS}`,
+  "-c:v libx264",
+  "-pix_fmt yuv420p",
+]);
+
+
+resolutions.forEach((resolution, index) => {
+    command.addOption(`-map`, 'v:0');
+    command.addOption(`-s:${index} ${resolution.width}x${resolution.height}`);
     command.addOption(`-b:v:${index}`, resolution.bitrate);
     command.addOption(`-maxrate:${index}`, resolution.maxrate);
     command.addOption(`-bufsize:${index}`, resolution.bufsize);
   });
 
-  command.addOption(`-map`, `0:a`);
-  command.addOption(`-f`, `hls`);
-  command.addOption(`-hls_time`, `4`);
-  command.addOption(`-hls_playlist_type`, `vod`);
-  command.addOption(`-hls_segment_filename`, `${outputPath}_%03d.ts`);
-  command.addOption(`-hls_segment_type`, `mpegts`);
-  command.addOption(`-hls_flags`, `delete_segments`);
-  command.addOutput(`${outputPath}.m3u8`);
+  resolutions.forEach(()=>{
+    command.addOption(`-map`, `a:0`);
 
-  command
-    .on("start", (cmd:string) => {
-      appendFileSync("hls.txt", cmd);
-    })
-    .on("progress", (progress:any) => {
-      console.log("progress", progress);
-    })
-    .on("error", function (err:any) {
-      console.log("errorss", err);
-    })
-    .run();
-}
+  })
+
+
+  command.addOutputOptions([
+    '-c:a aac',
+    '-b:a 128k',
+    '-ac 1',
+    '-ar 44100',
+    '-f hls',
+    `-hls_time ${HLS_TIME}`,
+    '-hls_playlist_type vod',
+    '-hls_flags independent_segments',
+    `-master_pl_name outputs/HLS/main.m3u8`,
+    `-hls_segment_filename outputs/HLS/stream_%v/s%06d.ts`,
+    '-strftime_mkdir 1',
+    '-var_stream_map', `"${resolutions.map((_,index)=>`v:${index},a:${index}`).join(" ")}"`,
+  ])
+  .output("outputs/HLS/stream_%v.m3u8")
+  .on("start",(cmd:string)=>appendFileSync("hls.txt",cmd))
+  .on('end', () => {
+    console.log('Transcoding finished!');
+  })
+  .on('progress', (progress:any) => {
+    console.log('Transcoding progress!' + progress);
+  })
+  .on('error', function(err:Error, stdout:any, stderr:any) {
+    console.log(err.message); //this will likely return "code=1" not really useful
+    console.log("stdout:\n" + stdout);
+    console.log("stderr:\n" + stderr); //this will contain more detailed debugging info
+})
+  .run();
