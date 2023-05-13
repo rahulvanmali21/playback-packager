@@ -8,13 +8,7 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
 
 
-// ffmpeg.setFfmpegPath(path);
-const VIDEO_IN = "inputs/input.mp4";
-const VIDEO_OUT = "outputs/main";
-const HLS_TIME = 4;
-const FPS = 25;
-const GOP_SIZE = 100;
-const PRESET_P = "veryfast";
+
 
 
 const resolutions = [
@@ -70,21 +64,23 @@ const resolutions = [
 ];
 
 
+export function hls(input:string,outputDir:string){
+
 const command = ffmpeg()
-.addInput(VIDEO_IN);
+.addInput(input);
 command.addOptions([
-  `-preset ${PRESET_P}`,
-  `-keyint_min ${GOP_SIZE}`,
-  `-g ${GOP_SIZE}`,
+  `-preset veryfast`,
+  `-keyint_min 100`,
+  `-g 100`,
   "-sc_threshold 0",
-  `-r ${FPS}`,
+  `-r 25`,
   "-c:v libx264",
   "-pix_fmt yuv420p",
 ]);
 
 
 resolutions.forEach((resolution, index) => {
-    command.addOption(`-map`, 'v:0');
+    command.addOption('-map v:0');
     command.addOption(`-s:${index} ${resolution.width}x${resolution.height}`);
     command.addOption(`-b:v:${index}`, resolution.bitrate);
     command.addOption(`-maxrate:${index}`, resolution.maxrate);
@@ -103,25 +99,29 @@ resolutions.forEach((resolution, index) => {
     '-ac 1',
     '-ar 44100',
     '-f hls',
-    `-hls_time ${HLS_TIME}`,
+    `-hls_time 4`,
     '-hls_playlist_type vod',
     '-hls_flags independent_segments',
-    `-master_pl_name outputs/HLS/main.m3u8`,
-    `-hls_segment_filename outputs/HLS/stream_%v/s%06d.ts`,
+    "-master_pl_name main.m3u8",
+    `-hls_segment_filename ${outputDir}/HLS/stream_%v/s%06d.ts`,
     '-strftime_mkdir 1',
-    '-var_stream_map', `"${resolutions.map((_,index)=>`v:${index},a:${index}`).join(" ")}"`,
   ])
-  .output("outputs/HLS/stream_%v.m3u8")
+  .addOption(
+    '-var_stream_map', `${resolutions.map((_,index)=>`v:${index},a:${index}`).join(" ")}`,
+  )
+  .output(`${outputDir}/HLS/stream_%v.m3u8`)
   .on("start",(cmd:string)=>appendFileSync("hls.txt",cmd))
   .on('end', () => {
     console.log('Transcoding finished!');
   })
   .on('progress', (progress:any) => {
-    console.log('Transcoding progress!' + progress);
+    console.log(progress);
   })
   .on('error', function(err:Error, stdout:any, stderr:any) {
-    console.log(err.message); //this will likely return "code=1" not really useful
+    console.log(err.message); 
     console.log("stdout:\n" + stdout);
-    console.log("stderr:\n" + stderr); //this will contain more detailed debugging info
+    console.log("stderr:\n" + stderr);
 })
   .run();
+
+}
