@@ -103,13 +103,13 @@ resolutions.forEach((resolution, index) => {
     '-hls_playlist_type vod',
     '-hls_flags independent_segments',
     "-master_pl_name main.m3u8",
-    `-hls_segment_filename ${outputDir}/HLS/stream_%v/s%06d.ts`,
+    `-hls_segment_filename ${outputDir}/stream_%v/s%06d.ts`,
     '-strftime_mkdir 1',
   ])
   .addOption(
     '-var_stream_map', `${resolutions.map((_,index)=>`v:${index},a:${index}`).join(" ")}`,
   )
-  .output(`${outputDir}/HLS/stream_%v.m3u8`)
+  .output(`${outputDir}/stream_%v.m3u8`)
   .on("start",(cmd:string)=>appendFileSync("hls.txt",cmd))
   .on('end', () => {
     console.log('Transcoding finished!');
@@ -125,3 +125,6 @@ resolutions.forEach((resolution, index) => {
   .run();
 
 }
+
+
+hls("inputs/input.mp4","outputs")
