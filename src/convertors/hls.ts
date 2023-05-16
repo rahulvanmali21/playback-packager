@@ -110,7 +110,7 @@ resolutions.forEach((resolution, index) => {
     '-var_stream_map', `${resolutions.map((_,index)=>`v:${index},a:${index}`).join(" ")}`,
   )
   .output(`${outputDir}/stream_%v.m3u8`)
-  .on("start",(cmd:string)=>appendFileSync("hls.txt",cmd))
+  .on("start",(cmd:string)=>console.log(cmd))
   .on('end', () => {
     console.log('Transcoding finished!');
   })
@@ -125,6 +125,3 @@ resolutions.forEach((resolution, index) => {
   .run();
 
 }
-
-
-hls("inputs/input.mp4","outputs")
