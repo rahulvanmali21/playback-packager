@@ -125,6 +125,3 @@ resolutions.forEach((resolution, index) => {
   .run();
 
 }
-
-
-hls("inputs/input.mp4","outputs")
